@@ -18,9 +18,9 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    email = Column(String(100), nullable=False, unique=True)
-    role = Column(String(100), nullable=False)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    role = Column(String, nullable=False)
 
 Base.metadata.create_all(engine)
 
@@ -72,3 +72,18 @@ def create_user(user: UserCreate, db:Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+@app.put("/users/{user_id}", response_model=UserResponse)
+def update_user(user_id:int, user:UserCreate, db:Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update user fields
+    for field, value in user.dict().items():
+        setattr(db_user, field, value)
+    
+    db.commit()
+    db.refresh(user)
+    return user
